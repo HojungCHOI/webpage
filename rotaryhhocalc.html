@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HHO 시스템 인터랙티브 대시보드</title>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A responsive, two-column dashboard layout. The left column contains all user-adjustable input parameters from the report, using sliders and number fields for intuitive interaction. The right column displays the dynamically calculated results, including key metrics and a central bar chart. This structure allows users to immediately see the cause-and-effect of their changes, transforming the static report into an exploratory tool. The user flow is simple: adjust inputs on the left, and observe real-time updates to numbers and charts on the right, with optional info-icons providing formula details. This dashboard approach was chosen as it's the most effective way to represent the dynamic, formula-based relationships in the source document. -->
+    <!-- Visualization & Content Choices: 
+        - Inputs -> Goal: Allow easy parameter modification -> Method: HTML sliders and number inputs for tactile control -> Interaction: 'input' event listeners trigger instant recalculations. Justification: Provides a direct, hands-on user experience.
+        - Key Metrics -> Goal: Display results clearly -> Method: Large, distinct display cards for each calculated output -> Interaction: Values update instantly; info-icons reveal calculation formulas on click. Justification: Offers immediate feedback and educational depth without cluttering the UI.
+        - Power Comparison Chart -> Goal: Visually compare the engine's available power vs. the power required by the HHO system and other generators -> Method: A dynamic stacked bar chart using Chart.js (Canvas) -> Interaction: The chart redraws with every input change, showing the allocation of power. Justification: This provides a crucial, at-a-glance summary of the system's energy balance, a core concept of the report. Library: Chart.js, confirming NO SVG/Mermaid.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background-color: #f8f7f4; /* Warm neutral background */
+            color: #434242; /* Dark warm gray text */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #edebe8;
+        }
+        .card-header {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #222222;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .input-label {
+            font-weight: 500;
+            color: #555555;
+        }
+        .input-field {
+            width: 100%;
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 0.375rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #83B4FF;
+            box-shadow: 0 0 0 3px rgba(131, 180, 255, 0.25);
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4A90E2; /* Accent blue */
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4A90E2;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .info-icon {
+            color: #b0b0b0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .info-icon:hover {
+            color: #4A90E2;
+        }
+        .formula {
+            display: none;
+            position: absolute;
+            background-color: #222;
+            color: #fff;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-family: 'Inter', monospace;
+            width: max-content;
+            max-width: 250px;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .formula::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #222 transparent transparent transparent;
+        }
+        .info-container:hover .formula {
+            display: block;
+        }
+        .result-value {
+            color: #4A90E2; /* Accent blue */
+            font-weight: 700;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+             .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">HHO 시스템 인터랙티브 대시보드</h1>
+            <p class="mt-3 text-gray-600 max-w-3xl mx-auto">엔진 및 시스템 변수를 조절하여 HHO 발전 시스템의 요구사항과 잠재력을 실시간으로 시뮬레이션하고, 각 요소의 관계를 시각적으로 확인하세요.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Controls -->
+            <div class="lg:col-span-1">
+                <div class="card p-6 sticky top-8">
+                    <h2 class="card-header pb-4 mb-6">입력 변수</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Engine Params -->
+                        <div>
+                            <label for="engineHP" class="input-label mb-2 block">엔진 최대 출력 (HP)</label>
+                            <input type="number" id="engineHP" class="input-field p-2" value="200">
+                        </div>
+                        <div>
+                            <label for="engineLoad" class="input-label mb-2 block">엔진 부하율 <span id="engineLoadValue" class="font-bold text-blue-600 ml-2">30%</span></label>
+                            <input type="range" id="engineLoad" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" min="10" max="100" step="5" value="30">
+                        </div>
+                        <!-- HHO Params -->
+                        <div>
+                            <label for="engineCC" class="input-label mb-2 block">엔진 배기량 (cc)</label>
+                            <input type="number" id="engineCC" class="input-field p-2" value="2000">
+                        </div>
+                        <div>
+                            <label for="injectionRate" class="input-label mb-2 block">목표 HHO 주입량 (LPM/1000cc)</label>
+                            <input type="number" id="injectionRate" class="input-field p-2" step="0.1" value="0.5">
+                        </div>
+                         <!-- Generator & System Params -->
+                        <div>
+                            <label for="systemEfficiency" class="input-label mb-2 block">시스템 종합 효율 <span id="systemEfficiencyValue" class="font-bold text-blue-600 ml-2">85%</span></label>
+                            <input type="range" id="systemEfficiency" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" min="50" max="100" step="1" value="85">
+                        </div>
+                        <div>
+                            <label for="generatorPower" class="input-label mb-2 block">개별 발전기 소모 동력 (W)</label>
+                            <input type="number" id="generatorPower" class="input-field p-2" value="2000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="lg:col-span-2">
+                 <!-- Key Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="card p-5 text-center">
+                        <h3 class="input-label mb-2 flex items-center justify-center">
+                            HHO 생성 필요 전력
+                            <div class="relative info-container ml-2">
+                                <i class="fa-regular fa-circle-question info-icon"></i>
+                                <div class="formula">필요질량(g/min) / 발생기효율</div>
+                            </div>
+                        </h3>
+                        <p id="resultPower" class="text-3xl result-value">151<span class="text-xl text-gray-600 ml-1">W</span></p>
+                    </div>
+                    <div class="card p-5 text-center">
+                        <h3 class="input-label mb-2 flex items-center justify-center">
+                           최대 설치 가능 발전기
+                           <div class="relative info-container ml-2">
+                                <i class="fa-regular fa-circle-question info-icon"></i>
+                                <div class="formula">발전가능전력(W) / 개별발전기소모동력(W)</div>
+                            </div>
+                        </h3>
+                        <p id="resultMaxGenerators" class="text-3xl result-value">18<span class="text-xl text-gray-600 ml-1">개</span></p>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="card p-6">
+                    <h2 class="card-header pb-4 mb-6 flex items-center justify-between">
+                        <span>엔진 동력 분배 현황</span>
+                        <div class="relative info-container">
+                            <i class="fa-regular fa-circle-question info-icon"></i>
+                            <div class="formula text-left">엔진이 현재 부하에서 내는 힘을<br>HHO와 다른 발전기들이<br>어떻게 나누어 사용하는지 보여줍니다.</div>
+                        </div>
+                    </h2>
+                    <div class="chart-container">
+                        <canvas id="powerChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Results -->
+                <div class="card p-6 mt-8">
+                     <h2 class="card-header pb-4 mb-6">상세 계산 결과</h2>
+                     <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
+                        <div>
+                            <h4 class="input-label mb-1">분당 필요 HHO (부피)</h4>
+                            <p id="resultHhoLpm" class="text-lg font-semibold text-gray-700">1.00 L/min</p>
+                        </div>
+                        <div>
+                            <h4 class="input-label mb-1">분당 필요 HHO (질량)</h4>
+                            <p id="resultHhoGpm" class="text-lg font-semibold text-gray-700">0.54 g/min</p>
+                        </div>
+                         <div>
+                            <h4 class="input-label mb-1">HHO 생성 필요 전류</h4>
+                            <p id="resultCurrent" class="text-lg font-semibold text-gray-700">12.6 A</p>
+                        </div>
+                         <div class="col-span-2 md:col-span-3 mt-4 border-t pt-4">
+                            <h4 class="input-label mb-1">현재 부하에서 발전 가능 총 전력</h4>
+                            <p id="resultAvailablePower" class="text-xl font-bold text-gray-800">38.0 kW</p>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = {
+                engineHP: document.getElementById('engineHP'),
+                engineLoad: document.getElementById('engineLoad'),
+                engineCC: document.getElementById('engineCC'),
+                injectionRate: document.getElementById('injectionRate'),
+                systemEfficiency: document.getElementById('systemEfficiency'),
+                generatorPower: document.getElementById('generatorPower'),
+            };
+
+            const valueDisplays = {
+                engineLoadValue: document.getElementById('engineLoadValue'),
+                systemEfficiencyValue: document.getElementById('systemEfficiencyValue'),
+            };
+
+            const outputs = {
+                resultPower: document.getElementById('resultPower'),
+                resultMaxGenerators: document.getElementById('resultMaxGenerators'),
+                resultHhoLpm: document.getElementById('resultHhoLpm'),
+                resultHhoGpm: document.getElementById('resultHhoGpm'),
+                resultCurrent: document.getElementById('resultCurrent'),
+                resultAvailablePower: document.getElementById('resultAvailablePower'),
+            };
+
+            const ctx = document.getElementById('powerChart').getContext('2d');
+            let powerChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['엔진 동력 배분'],
+                    datasets: [
+                        {
+                            label: 'HHO 필요 전력',
+                            data: [0],
+                            backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '기타 발전기 소모 전력',
+                            data: [0],
+                            backgroundColor: 'rgba(74, 144, 226, 0.7)',
+                            borderColor: 'rgba(74, 144, 226, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '잔여 발전 가능 전력',
+                            data: [0],
+                            backgroundColor: 'rgba(200, 200, 200, 0.5)',
+                             borderColor: 'rgba(200, 200, 200, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: '전력 (kW)'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        label += context.parsed.x.toFixed(2) + ' kW';
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            function updateCalculations() {
+                const engineHP = parseFloat(inputs.engineHP.value) || 0;
+                const engineLoad = parseFloat(inputs.engineLoad.value) || 0;
+                const engineCC = parseFloat(inputs.engineCC.value) || 0;
+                const injectionRate = parseFloat(inputs.injectionRate.value) || 0;
+                const systemEfficiency = parseFloat(inputs.systemEfficiency.value) || 0;
+                const generatorPowerW = parseFloat(inputs.generatorPower.value) || 1;
+                
+                // Static values from report
+                const testPower = 60; // W
+                const testProduction = 0.214; // g/min
+                const hhoDensity = 0.536; // g/L
+                const hpToW = 745.7;
+
+                valueDisplays.engineLoadValue.textContent = `${engineLoad}%`;
+                valueDisplays.systemEfficiencyValue.textContent = `${systemEfficiency}%`;
+
+                const hhoLpm = (engineCC / 1000) * injectionRate;
+                const hhoGpm = hhoLpm * hhoDensity;
+                const generatorEfficiency = testProduction / testPower;
+                const requiredPowerW = generatorEfficiency > 0 ? hhoGpm / generatorEfficiency : 0;
+                const requiredCurrentA = requiredPowerW / 12;
+
+                const engineMaxPowerW = engineHP * hpToW;
+                const availablePowerW = engineMaxPowerW * (engineLoad / 100) * (systemEfficiency / 100);
+                
+                const maxGenerators = Math.floor((availablePowerW - requiredPowerW) / generatorPowerW);
+                const safeMaxGenerators = Math.max(0, maxGenerators);
+
+                // Update text outputs
+                outputs.resultPower.innerHTML = `${requiredPowerW.toFixed(0)}<span class="text-xl text-gray-600 ml-1">W</span>`;
+                outputs.resultMaxGenerators.innerHTML = `${safeMaxGenerators}<span class="text-xl text-gray-600 ml-1">개</span>`;
+                outputs.resultHhoLpm.textContent = `${hhoLpm.toFixed(2)} L/min`;
+                outputs.resultHhoGpm.textContent = `${hhoGpm.toFixed(2)} g/min`;
+                outputs.resultCurrent.textContent = `${requiredCurrentA.toFixed(1)} A`;
+                outputs.resultAvailablePower.textContent = `${(availablePowerW / 1000).toFixed(1)} kW`;
+
+                // Update chart
+                const requiredPowerKW = requiredPowerW / 1000;
+                const otherGeneratorsPowerKW = safeMaxGenerators * (generatorPowerW / 1000);
+                const totalAvailablePowerKW = availablePowerW / 1000;
+                const remainingPowerKW = totalAvailablePowerKW - requiredPowerKW - otherGeneratorsPowerKW;
+                
+                powerChart.data.datasets[0].data[0] = requiredPowerKW;
+                powerChart.data.datasets[1].data[0] = otherGeneratorsPowerKW;
+                powerChart.data.datasets[2].data[0] = Math.max(0, remainingPowerKW);
+                powerChart.update();
+            }
+
+            Object.values(inputs).forEach(input => {
+                input.addEventListener('input', updateCalculations);
+            });
+
+            updateCalculations();
+        });
+    </script>
+</body>
+</html>
