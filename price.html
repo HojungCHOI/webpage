@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리치여행사 홈페이지 개발 제안서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: 제안서를 사용자가 쉽게 탐색할 수 있도록 탭 기반의 대시보드 구조로 설계했습니다. 사용자는 '핵심 요약', '개발 로드맵', '상세 견적', '개발 일정' 등 주요 섹션을 스크롤 없이 즉시 전환하며 확인할 수 있습니다. 이 구조는 복잡한 정보를 세분화하여 전달하고, 차트와 인터랙티브 요소를 통해 데이터 이해도를 높이는 데 효과적이기 때문에 선택했습니다. 사용자는 가장 궁금한 비용이나 일정부터 자유롭게 확인할 수 있어 탐색 경험이 향상됩니다. -->
+    <!-- Visualization & Content Choices: 
+        - 핵심 요약: Goal(핵심 정보 즉시 전달), Viz(키 메트릭 카드), Interaction(없음), Justification(가장 중요한 데이터를 전면에 배치하여 빠른 의사결정 지원).
+        - 개발 로드맵: Goal(단계별 개발 전략 설명), Viz(HTML/CSS 기반 탭 인터페이스), Interaction(탭 클릭 시 해당 페이즈 내용 표시), Justification(복잡한 단계별 계획을 사용자가 능동적으로 탐색하게 하여 정보 부담 감소).
+        - 상세 견적: Goal(비용 구조 비교 및 시각화), Viz(Chart.js 도넛 차트 및 HTML 테이블), Interaction(차트 호버 시 툴팁 표시), Justification(비용 항목별 비중을 시각적으로 보여주어 직관적인 이해를 도움).
+        - 개발 일정: Goal(프로젝트 타임라인 시각화), Viz(HTML/CSS 타임라인), Interaction(없음), Justification(텍스트 기반 일정을 시각적 흐름으로 표현하여 전체 프로세스를 쉽게 파악하도록 함).
+        - CONFIRMATION: NO SVG/Mermaid. All visuals are HTML/CSS or Chart.js on Canvas.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .tab-active { 
+            border-color: #0d9488; 
+            color: #0d9488;
+            font-weight: 700;
+            background-color: #f0fdfa;
+        }
+        .tab-inactive { 
+            border-color: transparent; 
+            color: #4b5563;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .phase-btn-active { background-color: #0d9488; color: white; }
+        .phase-btn-inactive { background-color: #e5e7eb; color: #374151; }
+    </style>
+</head>
+<body class="bg-slate-50 text-gray-800">
+
+    <div class="container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-teal-700 mb-2">🌏 리치여행사 홈페이지 개발 제안서</h1>
+            <p class="text-lg text-gray-600">디지털 전환을 통한 새로운 성장 로드맵</p>
+        </header>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="flex flex-wrap -mb-px" id="main-tabs">
+                    <button data-tab="summary" class="tab-active text-sm sm:text-base whitespace-nowrap border-b-2 font-semibold px-4 py-3 transition-colors duration-200">📌 핵심 요약</button>
+                    <button data-tab="roadmap" class="tab-inactive text-sm sm:text-base whitespace-nowrap border-b-2 font-semibold px-4 py-3 transition-colors duration-200">🚀 개발 로드맵</button>
+                    <button data-tab="quote" class="tab-inactive text-sm sm:text-base whitespace-nowrap border-b-2 font-semibold px-4 py-3 transition-colors duration-200">💰 상세 견적</button>
+                    <button data-tab="timeline" class="tab-inactive text-sm sm:text-base whitespace-nowrap border-b-2 font-semibold px-4 py-3 transition-colors duration-200">📅 개발 일정</button>
+                    <button data-tab="support" class="tab-inactive text-sm sm:text-base whitespace-nowrap border-b-2 font-semibold px-4 py-3 transition-colors duration-200">🤝 기술 및 지원</button>
+                </nav>
+            </div>
+
+            <div id="tab-content">
+                <div id="summary-content" class="tab-pane">
+                    <div class="p-2">
+                        <h2 class="text-2xl font-bold mb-6 text-teal-800">Executive Summary</h2>
+                        <p class="text-gray-600 mb-8">본 제안서는 리치여행사의 성공적인 디지털 전환을 위한 실용적이고 경제적인 솔루션을 담고 있습니다. 빠른 시장 진입과 단계적 성장을 통해 비즈니스 리스크를 최소화하고, 안정적인 운영과 확장을 목표로 합니다.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-teal-50 p-6 rounded-xl text-center border border-teal-100">
+                                <h3 class="text-lg font-semibold text-teal-700">총 개발비</h3>
+                                <p class="text-4xl font-bold my-2">1,200<span class="text-2xl font-medium">만원</span></p>
+                                <p class="text-sm text-gray-500">(VAT 별도, Phase 1 기준)</p>
+                            </div>
+                            <div class="bg-sky-50 p-6 rounded-xl text-center border border-sky-100">
+                                <h3 class="text-lg font-semibold text-sky-700">예상 개발 기간</h3>
+                                <p class="text-4xl font-bold my-2">2-3<span class="text-2xl font-medium">개월</span></p>
+                                <p class="text-sm text-gray-500">(핵심 기능 MVP 기준)</p>
+                            </div>
+                            <div class="bg-amber-50 p-6 rounded-xl text-center border border-amber-100">
+                                <h3 class="text-lg font-semibold text-amber-700">운영 시작</h3>
+                                <p class="text-4xl font-bold my-2">2~3<span class="text-2xl font-medium">개월차 이후</span></p>
+                                <p class="text-sm text-gray-500">부터 운영 가능</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-bold mb-4 text-teal-800">🎯 차별화 포인트</h3>
+                            <ul class="space-y-3">
+                                <li class="flex items-start"><span class="bg-teal-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 font-bold text-sm flex-shrink-0">1</span><div><strong class="font-semibold">빠른 시장 진입:</strong> 3개월 내 실제 운영 가능한 사이트 구축으로 기회 선점</div></li>
+                                <li class="flex items-start"><span class="bg-teal-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 font-bold text-sm flex-shrink-0">2</span><div><strong class="font-semibold">검증된 기술:</strong> 안정성이 확보된 오픈소스 기반 기술 활용</div></li>
+                                <li class="flex items-start"><span class="bg-teal-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 font-bold text-sm flex-shrink-0">3</span><div><strong class="font-semibold">유연한 확장성:</strong> 비즈니스 성장에 맞춰 단계별 기능 추가로 리스크 최소화</div></li>
+                                <li class="flex items-start"><span class="bg-teal-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-3 font-bold text-sm flex-shrink-0">4</span><div><strong class="font-semibold">비용 효율성:</strong> 전문 인력의 집중 개발로 최적의 비용 달성</div></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="roadmap-content" class="tab-pane" style="display: none;">
+                    <div class="p-2">
+                        <h2 class="text-2xl font-bold mb-2 text-teal-800">개발 전략: "Start Small, Grow Big"</h2>
+                        <p class="text-gray-600 mb-8">본 섹션에서는 '작게 시작하여 크게 성장하는' 저희의 개발 전략을 단계별로 시각화하여 보여드립니다. 각 단계를 클릭하여 해당 단계의 목표와 구현될 핵심 기능들을 자세히 살펴보실 수 있습니다.</p>
+                        
+                        <div class="flex justify-center space-x-2 sm:space-x-4 mb-8" id="phase-tabs">
+                            <button data-phase="1" class="phase-btn-active px-4 py-2 text-sm sm:text-base font-bold rounded-lg shadow-sm transition-all duration-200">Phase 1: Quick Launch</button>
+                            <button data-phase="2" class="phase-btn-inactive px-4 py-2 text-sm sm:text-base font-bold rounded-lg shadow-sm transition-all duration-200">Phase 2: Growth</button>
+                            <button data-phase="3" class="phase-btn-inactive px-4 py-2 text-sm sm:text-base font-bold rounded-lg shadow-sm transition-all duration-200">Phase 3: Scale</button>
+                        </div>
+                        
+                        <div id="phase-content-area">
+                            <div id="phase-1-content" class="phase-pane bg-slate-50 border rounded-xl p-6">
+                                <h3 class="text-xl font-bold text-teal-700">Phase 1: Quick Launch (0-2개월) ✅</h3>
+                                <p class="mt-1 mb-4 text-gray-600">핵심 기능만으로 빠른 시장 진입 및 비즈니스 검증</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="font-semibold mb-2">주요 구현 기능</h4>
+                                        <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                            <li>회원가입/로그인 (소셜 포함)</li>
+                                            <li>호텔 상품 등록 및 예약 시스템</li>
+                                            <li>투어 패키지 상품 관리</li>
+                                            <li>간편 결제 (PG사 연동)</li>
+                                            <li>모바일 반응형 디자인</li>
+                                            <li>PC 전용 관리자 페이지</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold mb-2">기술적 접근</h4>
+                                        <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                            <li>CMS: 오픈소스 기반 (안정성, 빠른 개발)</li>
+                                            <li>결제: PG사 간편결제 모듈</li>
+                                            <li>디자인: Bootstrap 5 + 커스텀 테마</li>
+                                            <li>호스팅: 단독 웹호스팅</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="phase-2-content" class="phase-pane bg-slate-50 border rounded-xl p-6" style="display: none;">
+                                <h3 class="text-xl font-bold text-sky-700">Phase 2: Growth (3개월차) 🔄</h3>
+                                <p class="mt-1 mb-4 text-gray-600">사용자 피드백 기반 핵심 기능 강화 및 서비스 고도화</p>
+                                <h4 class="font-semibold mb-2">추가 기능</h4>
+                                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                    <li>📱 PWA 전환 (모바일 앱처럼 설치 가능)</li>
+                                    <li>🎥 유튜브 리뷰 연동</li>
+                                    <li>💬 카카오톡 알림/상담 연동</li>
+                                    <li>📊 관리자 예약 현황 대시보드</li>
+                                    <li>🔍 상품 검색 기능 고도화</li>
+                                </ul>
+                            </div>
+                            <div id="phase-3-content" class="phase-pane bg-slate-50 border rounded-xl p-6" style="display: none;">
+                                <h3 class="text-xl font-bold text-amber-700">Phase 3: Scale (4개월차~) 🚀</h3>
+                                <p class="mt-1 mb-4 text-gray-600">수익 극대화 및 차별화된 경쟁력 확보</p>
+                                <h4 class="font-semibold mb-2">고도화 기능</h4>
+                                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                                    <li>🤖 AI 챗봇 상담 기능 도입</li>
+                                    <li>📱 네이티브 앱 개발 (웹앱 기반)</li>
+                                    <li>🌐 다국어 지원 (기본 2개국)</li>
+                                    <li>📈 빅데이터 기반 사용자 분석</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="quote-content" class="tab-pane" style="display: none;">
+                    <div class="p-2">
+                        <h2 class="text-2xl font-bold mb-2 text-teal-800">상세 견적</h2>
+                        <p class="text-gray-600 mb-8">Phase 1의 필수 개발 비용과 향후 확장을 위한 선택적 비용을 안내합니다. 모든 비용은 투명하게 공개되며, 합리적인 예산 내에서 최고의 결과물을 제공합니다.</p>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4 text-center">Phase 1 개발비 분포</h3>
+                                <div class="chart-container">
+                                    <canvas id="costChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 border rounded-xl p-6">
+                                <h3 class="text-xl font-bold mb-4">📋 Phase 1 개발비 (필수)</h3>
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="py-2">항목</th>
+                                            <th class="py-2 text-right">금액</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cost-table-body">
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="border-t-2 font-bold">
+                                            <td class="py-2">총계</td>
+                                            <td class="py-2 text-right">1,200만원</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="mt-12">
+                            <h3 class="text-xl font-bold mb-4 text-teal-800">📈 Phase 2-3 추가 개발비 (선택)</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full min-w-max text-left bg-white rounded-lg shadow">
+                                    <thead class="bg-slate-100">
+                                        <tr>
+                                            <th class="p-3">단계</th>
+                                            <th class="p-3">주요 기능</th>
+                                            <th class="p-3 text-right">예상 금액</th>
+                                            <th class="p-3 text-right">진행 시기</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b">
+                                            <td class="p-3 font-semibold">Phase 2</td>
+                                            <td class="p-3">PWA, 유튜브 연동, 카카오 알림</td>
+                                            <td class="p-3 text-right">500만원</td>
+                                            <td class="p-3 text-right">3개월차</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3 font-semibold">Phase 3</td>
+                                            <td class="p-3">AI 챗봇, 앱 개발, 다국어</td>
+                                            <td class="p-3 text-right">800만원</td>
+                                            <td class="p-3 text-right">6개월차</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div id="timeline-content" class="tab-pane" style="display: none;">
+                    <div class="p-2">
+                        <h2 class="text-2xl font-bold mb-2 text-teal-800">개발 일정</h2>
+                        <p class="text-gray-600 mb-8">프로젝트는 체계적인 타임라인에 따라 진행됩니다. 각 단계별 마일스톤을 통해 진행 상황을 투명하게 공유하고, 정해진 일정 내에 성공적으로 프로젝트를 완수합니다.</p>
+                        
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4">상세 타임라인</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="bg-slate-50 border rounded-xl p-4">
+                                        <h4 class="font-bold border-b pb-2 mb-2">1개월차</h4>
+                                        <p class="text-sm"><strong>1-2주:</strong> 기획/설계, 와이어프레임</p>
+                                        <p class="text-sm"><strong>3-4주:</strong> 메인페이지, 회원/로그인</p>
+                                    </div>
+                                    <div class="bg-slate-50 border rounded-xl p-4">
+                                        <h4 class="font-bold border-b pb-2 mb-2">2개월차</h4>
+                                        <p class="text-sm"><strong>1-2주:</strong> 상품 관리 시스템</p>
+                                        <p class="text-sm"><strong>3-4주:</strong> 예약/결제 시스템</p>
+                                    </div>
+                                    <div class="bg-slate-50 border rounded-xl p-4">
+                                        <h4 class="font-bold border-b pb-2 mb-2">3개월차</h4>
+                                        <p class="text-sm"><strong>1-2주:</strong> 관리자 페이지</p>
+                                        <p class="text-sm"><strong>3-4주:</strong> 테스트, 버그 수정, 배포</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xl font-bold mb-6">주요 마일스톤</h3>
+                                <div class="relative pl-6 border-l-2 border-teal-500">
+                                    <div class="mb-8">
+                                        <div class="absolute -left-3.5 top-1 w-6 h-6 bg-teal-500 rounded-full border-4 border-white"></div>
+                                        <p class="font-bold">2주차: 기획/설계 최종 확정 ✅</p>
+                                        <p class="text-sm text-gray-600">모든 요구사항을 확정하고 개발 범위를 정의합니다.</p>
+                                    </div>
+                                    <div class="mb-8">
+                                        <div class="absolute -left-3.5 top-1 w-6 h-6 bg-teal-500 rounded-full border-4 border-white"></div>
+                                        <p class="font-bold">4주차: 메인 페이지 및 핵심 UI 완성 ✅</p>
+                                        <p class="text-sm text-gray-600">사용자가 처음 마주할 화면의 개발을 완료합니다.</p>
+                                    </div>
+                                    <div class="mb-8">
+                                        <div class="absolute -left-3.5 top-1 w-6 h-6 bg-teal-500 rounded-full border-4 border-white"></div>
+                                        <p class="font-bold">6주차: 예약/결제 시스템 기능 구현 ✅</p>
+                                        <p class="text-sm text-gray-600">수익 창출의 핵심인 예약 및 결제 기능을 구현합니다.</p>
+                                    </div>
+                                    <div class="mb-8">
+                                        <div class="absolute -left-3.5 top-1 w-6 h-6 bg-teal-500 rounded-full border-4 border-white"></div>
+                                        <p class="font-bold">8주차: 베타 버전 오픈 (전체 기능 테스트) ✅</p>
+                                        <p class="text-sm text-gray-600">정식 오픈 전, 내부 테스트를 위한 베타 버전을 공개합니다.</p>
+                                    </div>
+                                    <div>
+                                        <div class="absolute -left-3.5 top-1 w-6 h-6 bg-teal-500 rounded-full border-4 border-white"></div>
+                                        <p class="font-bold">10주차: 정식 오픈 및 안정화 ✅</p>
+                                        <p class="text-sm text-gray-600">최종 검수 후 웹사이트를 정식으로 오픈합니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="support-content" class="tab-pane" style="display: none;">
+                    <div class="p-2">
+                         <h2 class="text-2xl font-bold mb-8 text-teal-800">기술 및 지원</h2>
+                         <div class="space-y-10">
+                            <div>
+                                <h3 class="text-xl font-bold mb-4">🛠️ 기술 스택</h3>
+                                <p class="text-gray-600 mb-4">안정성과 확장성을 고려하여 검증된 기술들을 사용합니다.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                                    <div class="bg-slate-50 border rounded-lg p-4">
+                                        <h4 class="font-bold">Frontend</h4>
+                                        <p class="text-sm text-gray-600">HTML5, Bootstrap 5, jQuery</p>
+                                    </div>
+                                    <div class="bg-slate-50 border rounded-lg p-4">
+                                        <h4 class="font-bold">Backend</h4>
+                                        <p class="text-sm text-gray-600">PHP 8.1</p>
+                                    </div>
+                                    <div class="bg-slate-50 border rounded-lg p-4">
+                                        <h4 class="font-bold">Database</h4>
+                                        <p class="text-sm text-gray-600">MySQL 5.7</p>
+                                    </div>
+                                </div>
+                            </div>
+                             
+                            <div>
+                                <h3 class="text-xl font-bold mb-4">🎁 특별 제공 사항 (무료)</h3>
+                                <ul class="list-disc list-inside space-y-2">
+                                    <li><strong>도메인 연결:</strong> 도메인 구매 대행 및 서버 연결 지원 (월 사용비용은 별도)</li>
+                                    <li><strong>SSL 인증서:</strong> 보안 강화를 위한 SSL 인증서 무료 설치</li>
+                                    <li><strong>기본 SEO:</strong> 검색엔진 최적화 기본 설정</li>
+                                    <li><strong>운영 교육:</strong> 관리자 페이지 사용법 교육 (총 2회)</li>
+                                    <li><strong>기본 유지보수:</strong> 오픈 후 1개월 무상 A/S 제공</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-teal-50 border border-teal-200 rounded-xl p-6">
+                                <h3 class="text-xl font-bold mb-4 text-teal-800">🤝 사후 관리 및 기술 지원</h3>
+                                <p class="text-gray-700 mb-4">웹사이트는 제작만큼이나 꾸준한 관리가 중요합니다. 안정적인 운영과 지속적인 성장을 위해 월간 기술 지원 패키지를 제안합니다.</p>
+                                <p class="text-2xl font-bold text-teal-700 mb-2">월 30만원 (VAT 별도)</p>
+                                <ul class="text-sm text-gray-600 list-disc list-inside space-y-1">
+                                    <li>서버 및 보안 정기 업데이트</li>
+                                    <li>데이터 정기 백업 및 복구 관리</li>
+                                    <li>긴급 버그 발생 시 신속 대응</li>
+                                    <li>소규모 기능 개선 지원 (월 5시간 이내)</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                                <h3 class="text-xl font-bold mb-4 text-amber-800">✍️ 범위 관리 및 추가 요구사항</h3>
+                                <p class="text-gray-700">성공적인 프로젝트 완수를 위해 초기 기획 단계에서 개발 범위 확정이 중요합니다. 기획/설계가 완료되고 코딩이 시작된 이후 발생하는 추가 요구사항은 **2차 추가 개발** 건으로 분류되어 별도 견적과 일정 협의 후 진행됩니다. 이는 프로젝트 일정 지연과 비용 초과를 방지하기 위함입니다.</p>
+                            </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const mainTabs = document.querySelectorAll('#main-tabs button');
+            const tabPanes = document.querySelectorAll('#tab-content .tab-pane');
+
+            mainTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    mainTabs.forEach(t => {
+                        t.classList.remove('tab-active');
+                        t.classList.add('tab-inactive');
+                    });
+                    tab.classList.remove('tab-inactive');
+                    tab.classList.add('tab-active');
+
+                    tabPanes.forEach(pane => {
+                        pane.style.display = 'none';
+                    });
+                    document.getElementById(tab.dataset.tab + '-content').style.display = 'block';
+                });
+            });
+            
+            const phaseTabs = document.querySelectorAll('#phase-tabs button');
+            const phasePanes = document.querySelectorAll('#phase-content-area .phase-pane');
+            
+            phaseTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    phaseTabs.forEach(t => {
+                        t.classList.remove('phase-btn-active');
+                        t.classList.add('phase-btn-inactive');
+                    });
+                    tab.classList.remove('phase-btn-inactive');
+                    tab.classList.add('phase-btn-active');
+                    
+                    phasePanes.forEach(pane => {
+                        pane.style.display = 'none';
+                    });
+                    document.getElementById('phase-' + tab.dataset.phase + '-content').style.display = 'block';
+                });
+            });
+
+            const costData = {
+                items: [
+                    { name: "기획/설계", cost: 100 },
+                    { name: "디자인 UI/UX", cost: 200 },
+                    { name: "프론트엔드", cost: 250 },
+                    { name: "백엔드", cost: 300 },
+                    { name: "결제연동", cost: 100 },
+                    { name: "관리자", cost: 150 },
+                    { name: "테스트/배포", cost: 100 },
+                ],
+                colors: [
+                    '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#eab308'
+                ]
+            };
+
+            const costTableBody = document.getElementById('cost-table-body');
+            costData.items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td class="py-2">${item.name}</td><td class="py-2 text-right">${item.cost}만원</td>`;
+                costTableBody.appendChild(row);
+            });
+            
+            const ctx = document.getElementById('costChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: costData.items.map(d => d.name),
+                    datasets: [{
+                        data: costData.items.map(d => d.cost),
+                        backgroundColor: costData.colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '만원';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
